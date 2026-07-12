@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>疾风电竞 - 点单系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #121212; color: #fff; min-height: 100vh; }
+        
+        /* 登录页样式 */
+        .login-container {
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        .login-box {
+            background: #fff; padding: 40px; border-radius: 12px; width: 320px; text-align: center;
+        }
+        .login-box h2 { color: #333; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; 
+            border-radius: 6px; font-size: 16px;
+        }
+        .login-box button {
+            width: 100%; padding: 12px; background: #e94560; color: #fff; 
+            border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 10px;
+        }
+        .login-box button:hover { background: #c73652; }
+
+        /* 主页样式 */
+        .app-container { display: none; padding: 20px; max-width: 800px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        header h1 { font-size: 24px; color: #e94560; }
+        .logout-btn { background: none; border: 1px solid #e94560; color: #e94560; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+
+        /* 方格样式 */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .card {
+            background: #1e1e1e; border-radius: 10px; padding: 15px; text-align: center; 
+            cursor: pointer; transition: 0.3s; border: 2px solid transparent;
+        }
+        .card:hover { border-color: #e94560; transform: translateY(-3px); }
+        .card img { width: 100%; height: 100px; object-fit: cover; border-radius: 6px; background: #333; margin-bottom: 10px; }
+        .card h3 { font-size: 16px; margin-bottom: 5px; }
+        .card p { color: #e94560; font-weight: bold; }
+
+        /* 收款码弹窗 */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100;
+        }
+        .modal-content {
+            background: #fff; padding: 30px; border-radius: 12px; text-align: center; max-width: 300px;
+        }
+        .modal-content h3 { color: #333; margin-bottom: 15px; }
+        .modal-content img { width: 200px; height: 200px; background: #eee; margin-bottom: 15px; }
+        .close-btn { background: #e94560; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- 登录页 -->
+    <div class="login-container" id="loginPage">
+        <div class="login-box">
+            <h2>🎮 疾风电竞</h2>
+            <input type="text" id="username" placeholder="手机号 / 账号" value="13800138000">
+            <input type="password" id="password" placeholder="密码" value="123456">
+            <button onclick="handleLogin()">登 录</button>
+            <p style="margin-top:10px; font-size:12px; color:#888;">演示账号：任意输入即可</p>
+        </div>
+    </div>
+
+    <!-- 点单主页 -->
+    <div class="app-container" id="appPage">
+        <header>
+            <h1>🎮 疾风电竞</h1>
+            <button class="logout-btn" onclick="handleLogout()">退出</button>
+        </header>
+        <div class="grid" id="productGrid">
+            <!-- 方格会在这里生成 -->
+        </div>
+    </div>
+
+    <!-- 收款码弹窗 -->
+    <div class="modal" id="payModal">
+        <div class="modal-content">
+            <h3>请扫码支付</h3>
+            <div style="width:200px;height:200px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;margin:0 auto 15px;border-radius:8px;">
+                <span style="color:#999;"></span>
+            </div>
+            <p style="color:#666;font-size:14px;margin-bottom:15px;">支付后请截图发客服核单</p>
+            <button class="close-btn" onclick="closeModal()">我已完成支付</button>
+        </div>
+    </div>
+
+<script>
+    // ========== 你可以在这里修改商品 ==========
+    const products = [
+        { name: "3r1w银狮", price: "¥3", img: "IMG_20260620_205818..jpg" },
+        { name: "2r1w研发", price: "¥2", img: "IMG_20260620_205818..jpg" },
+        { name: "20r25w研发", price: "¥20", img: "IMG_20260620_205818..jpg" },
+        { name: "30r40w研发", price: "¥30", img: "IMG_20260620_205818..jpg" },
+
+    ];
+    // ==========================================
+
+    // 渲染方格
+    function renderGrid() {
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = products.map(p => `
+            <div class="card" onclick="openPayModal('${p.name}', '${p.price}')">
+                <div style="width:100%;height:100px;background:#333;border-radius:6px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;color:#666;">
+                    ${p.img ? `<img src="${p.img}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '📷'}
+                </div>
+                <h3>${p.name}</h3>
+                <p>${p.price}</p>
+            </div>
+        `).join('');
+    }
+
+    // 登录
+    function handleLogin() {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('appPage').style.display = 'block';
+        renderGrid();
+    }
+
+    // 退出
+    function handleLogout() {
+        document.getElementById('appPage').style.display = 'none';
+        document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    // 打开收款码
+    function openPayModal(name, price) {
+        document.getElementById('payModal').style.display = 'flex';
+    }
+
+    // 关闭弹窗
+    function closeModal() {
+        document.getElementById('payModal').style.display = 'none';
+    }
+
+    // 点击弹窗外部关闭
+    document.getElementById('payModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+</body>
+</html>
